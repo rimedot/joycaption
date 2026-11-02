@@ -1,0 +1,33 @@
+name: Release
+
+# Builds joycaption.mevax for a published release, uploads it to that release and
+# attests it, so Meva can check the file and see where it was built.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  mevax:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build joycaption.mevax
+        run: python3 build.py --tag "$TAG"
+
+      - name: Attest the build
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: joycaption.mevax
+
+      - name: Upload to the release
+        run: gh release upload "$TAG" joycaption.mevax --clobber
